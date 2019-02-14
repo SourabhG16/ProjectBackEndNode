@@ -89,6 +89,8 @@ exports.searchDest = (req, res) => {
       });
 };
 exports.findStation = (req, res) => {
+    var min=9999;
+	var src;
 	var lati=req.body.lat;
 	var longi=req.body.longi;
 	MongoClient.connect(url, function(err, db) {
@@ -98,25 +100,55 @@ exports.findStation = (req, res) => {
 		dbo.collection("stations").find().toArray(function(err, result) {
           if (err) throw err;    
 		  var i;
-		  var min=9999;
-		  var src;
+		  
 		  for(i=0 ; i < result.length ; i++)
 		  {
-			console.log(result[i]["Latitude"]);
-			console.log(result[i]["Longitude"]);			
+			// console.log(result[i]["Latitude"]);
+			// console.log(result[i]["Longitude"]);			
 			point1 = new GeoPoint(parseFloat(lati), parseFloat(longi));
 			point2 = new GeoPoint(parseFloat(result[i]["Latitude"]), parseFloat(result[i]["Longitude"]));
 			var distance = point1.distanceTo(point2, true)
-			console.log(distance)      
+			// console.log(distance)      
 			if( min > distance )
 			{
 				min=distance;
 				src=result[i];
 			}			
-		  }
-		  res.send(src);
+          }
           db.close();
-        	});
+        });
+    });
+		  if(min < 0.5)
+		  {
+            console.log("found.........................!!!!!!!!!!");
+		 	console.log(min);
+		  	res.json(src);	
+		  }
+		  else          //write new station cord
+		  {
+            console.log("not found.......!!!!!!!!!!!!!!!!!!!!!");
+            newStation(lati,longi);
+            res.send(null);
+          }
+		  // res.send(src);
         
-      }); 
+      
 };
+var newStation = function(lati,longi){
+    console.log(lati);
+    console.log(longi);
+    MongoClient.connect(url, function(err, db) {
+        var GeoPoint = require('geopoint');
+		if (err) throw err;
+        var dbo = db.db("ClientDB");
+        var loc={
+            Latitude : lati,
+            Longitude : longi
+        };
+        dbo.collection("newStations").insertOne(loc,function(err, result) {
+            if (err) throw err;    
+            console.log("inserted");
+            db.close();
+              });
+    });
+}
