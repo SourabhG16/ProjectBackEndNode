@@ -1,22 +1,22 @@
 var mongoose = require('mongoose');
 var bcrypt = require('bcrypt'); 
 var UserSchema = new mongoose.Schema({
-   name:{
+   Name:{
         type:String,
         required: true,
     },
-  email: {
+  Email: {
         type:String,
         unique: true,
         required: true,
         lowercase: true,
         trim: true
     },
-  password: {
+  Password: {
         type: String,
         required: true
     },
-    age:
+    Age:
     {
         type:Number,
         required:true,
@@ -26,7 +26,11 @@ var UserSchema = new mongoose.Schema({
         type:String,
         required:true
     },
-    address:
+    Type:{
+        type:String,
+        required:true,
+    },
+    Address:
     {
         type:String,
         required:true,
@@ -47,22 +51,21 @@ var UserSchema = new mongoose.Schema({
 UserSchema.pre('save',  function(next) {
     var user = this;
 
-     if (!user.isModified('password')) return next();
+     if (!user.isModified('Password')) return next();
 
      bcrypt.genSalt(10, function(err, salt) {
          if (err) return next(err);
  
-         bcrypt.hash(user.password, salt, function(err, hash) {
+         bcrypt.hash(user.Password, salt, function(err, hash) {
              if (err) return next(err);
  
-             user.password = hash;
+             user.Password = hash;
              next();
          });
      });
 });
- 
 UserSchema.methods.comparePassword = function (candidatePassword, cb) {
-    bcrypt.compare(candidatePassword, this.password, (err, isMatch) => {
+    bcrypt.compare(candidatePassword, this.Password, (err, isMatch) => {
         if (err) return cb(err);
         cb(null, isMatch);
     });
