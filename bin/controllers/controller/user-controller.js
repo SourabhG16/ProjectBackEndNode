@@ -5,6 +5,7 @@ let date = require('date-and-time');
 var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://localhost:27017/";
 var OWM = require("openweathermap-node");
+var Sync = require('sync');
 
 const helper = new OWM(
     {
@@ -170,55 +171,58 @@ var newStation = function(lati,longi){
     });
 }
 exports.tripRecord = (req, res) => {
-    console.log("are u there");
-     MongoClient.connect(url, function(err, db) {
-    //console.log(req.body.data[0].AreaName);
-    //console.log(req.body.data[2]);
+  
     var type;
-    var weather;
+    console.log("are u there");
+    console.log(req.body.data);
+     MongoClient.connect(url, function(err, db) {
+    
     var dbo = db.db("ClientDB");
     dbo.collection("customers").findOne({ Name: req.body.data[2]}, (err, user) => {
-       // console.log(user.Type);
-        if (err) {
-            console.log("error");
+        if (err) throw err; 
+        
+        if(user){
+            type=user.Type;
+            console.log("in"+type); 
+            insertRecord(type,req.body.data);
         }
-        if (!user) {
-            console.log("error1");
-        }
-            //console.log("not");
-            //type=user.Type;
-            console.log(user.Type);
+        db.close(); 
+        res.send();     
     });
-    console.log(type);
+});
+
+};
+
+ function insertRecord(type,data){
+    var weather;
     helper.getCurrentWeatherByCityName("Pune", (err, currentWeather) => {
-        if(err){
-            console.log(err);
-           return null;
-        }
-        else{
-           // console.log(currentWeather.main.temp);
-             weather=JSON.stringify(currentWeather.main);
-            // console.log(JSON.stringify(currentWeather.main));
-            console.log("Wea:"+weather);
-        }
-    });
-    console.log(weather);
-    let now = new Date();
-		if (err) throw err;
+    if(err){
+        console.log(err);
+        return null;
+    }
+    else{
+        weather=JSON.stringify(currentWeather.main);
+        console.log("Wea:"+weather);
+        let now = new Date();
         var record={
-            sourceStation:req.body.data[0].Name,
-            destStation:req.body.data[1].Name,
+            sourceStation:data[0].Name,
+            destStation:data[1].Name,
             userType:type,
             weatherData:weather,    
             tourDate:date.format(now,'MMM DD YYYY'),
             startTime:date.format(now,'HH:mm:ss'),
-            userName:req.body.data[2],
+            userName:data[2],
             };
-        dbo.collection("tripRecords").insertOne(record,function(err, result) {
+            console.log("record: "+record); 
+            MongoClient.connect(url, function(err, db) {
+            var dbo = db.db("ClientDB");
+            dbo.collection("tripRecords").insertOne(record,function(err, result) {
             if (err) throw err;    
             console.log("inserted");
             db.close();
-              });
-    });
-    res.send();
+        });
+        });
+        }
+    });   
 }
+    
