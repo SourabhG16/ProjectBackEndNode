@@ -45,9 +45,13 @@ var UserSchema = new mongoose.Schema({
     {
         type:String,
         required:true
+    },
+    AccountBalance:
+    {
+        type:Number
     }
 });
- 
+
 UserSchema.pre('save',  function(next) {
     var user = this;
 
@@ -70,5 +74,4 @@ UserSchema.methods.comparePassword = function (candidatePassword, cb) {
         cb(null, isMatch);
     });
 };
- 
 module.exports = mongoose.model('customers', UserSchema);
