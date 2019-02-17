@@ -5,7 +5,6 @@ let date = require('date-and-time');
 var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://localhost:27017/";
 var OWM = require("openweathermap-node");
-var Sync = require('sync');
 
 const helper = new OWM(
     {
@@ -115,9 +114,7 @@ exports.findStation = (req, res) => {
           if (err) throw err;    
 		  var i;		  
 		  for(i=0 ; i < result.length ; i++)
-		  {
-			// console.log(result[i]["Latitude"]);
-			// console.log(result[i]["Longitude"]);			
+		  {			
 			point1 = new GeoPoint(parseFloat(lati), parseFloat(longi));
 			point2 = new GeoPoint(parseFloat(result[i]["Latitude"]), parseFloat(result[i]["Longitude"]));
 			var distance = point1.distanceTo(point2, true)
@@ -213,7 +210,7 @@ exports.tripRecord = (req, res) => {
             startTime:date.format(now,'HH:mm:ss'),
             userName:data[2],
             };
-            console.log("record: "+record); 
+           // console.log("record: "+record); 
             MongoClient.connect(url, function(err, db) {
             var dbo = db.db("ClientDB");
             dbo.collection("tripRecords").insertOne(record,function(err, result) {
@@ -225,4 +222,20 @@ exports.tripRecord = (req, res) => {
         }
     });   
 }
-    
+exports.Transaction = (req,res) =>{
+
+    console.log(req.body[2]);
+    MongoClient.connect(url, function(err, db) {
+    var dbo = db.db("ClientDB");
+    var myquery = { Name: req.body[2] };
+    dbo.collection("customers").updateOne(myquery,{ "$inc": {"AccountBalance": -5}},function(err, res1) {
+    if (err) throw err;
+    if(res1)
+    {
+    console.log("1 document updated");
+    db.close();
+    return res.status(201).json({ msg: 'Payment SuccessFul!' });
+    }
+     });
+});  
+}
