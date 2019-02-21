@@ -183,7 +183,6 @@ exports.tripRecord = (req, res) => {
 });
 
 };
-
  function insertRecord(type,data){
     var weather;
     helper.getCurrentWeatherByCityName("Pune", (err, currentWeather) => {
@@ -192,9 +191,9 @@ exports.tripRecord = (req, res) => {
         return null;
     }
     else{
-        console.log(currentWeather);
+        //console.log(currentWeather);
         weather=JSON.stringify(currentWeather.main);
-        console.log("Wea:"+weather);
+       // console.log("Wea:"+weather);
         let now = new Date();
         var record={
             sourceStation:data[0].Name,
@@ -204,13 +203,14 @@ exports.tripRecord = (req, res) => {
             tourDate:date.format(now,'MMM DD YYYY'),
             startTime:date.format(now,'HH:mm:ss'),
             userName:data[2],
+            Duration:null,
             };
            // console.log("record: "+record); 
             MongoClient.connect(url, function(err, db) {
             var dbo = db.db("ClientDB");
             dbo.collection("tripRecords").insertOne(record,function(err, result) {
             if (err) throw err;    
-            console.log("inserted");
+            console.log("inserted trip Records");
             db.close();
         });
         });
@@ -219,7 +219,7 @@ exports.tripRecord = (req, res) => {
 }
 exports.Transaction = (req,res) =>{
 
-    console.log(req.body[2]);
+    //console.log(req.body[2]);
     MongoClient.connect(url, function(err, db) {
     var dbo = db.db("ClientDB");
     var myquery = { Name: req.body[2] };
@@ -235,19 +235,21 @@ exports.Transaction = (req,res) =>{
 });  
 }
 exports.tripDuration = (req,res) =>{
+    //var a=req.body[1];
+    console.log(req.body[0]);
     console.log(req.body[1]);
-    MongoClient.connect(url, function(err, db) {
+    
+   MongoClient.connect(url, function(err, db) {
     var dbo = db.db("ClientDB");
-    var myquery = { Name: req.body[1] };
-    dbo.collection("tripRecords").updateOne(myquery,{ "$set": {"Duration": req.body[0]}},function(err, res1) {
+    var myquery = { userName: req.body[1] };
+    dbo.collection("tripRecords").findOneAndUpdate(myquery,{ "$set": {"Duration": req.body[0]}},{sort: { startTime: -1 }},function(err, res1) {
     if (err) throw err;
     if(res1)
     {
-    console.log("1 document updated");
+    console.log("1 document updated and Duration Inserted");
     db.close();
-    return res.status(201).json({ msg: 'Payment SuccessFul!' });
+    return res.status(201).json({ msg: 'Trip SuccessFul!' });
     }
      });
-});  
+})
 }
-
