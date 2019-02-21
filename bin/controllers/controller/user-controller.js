@@ -135,19 +135,13 @@ exports.findStation = (req, res) => {
 		  else          //write new station cord
 		  {
             console.log("not found.......!!!!!!!!!!!!!!!!!!!!!");
-            bool=1;        
+            newStation(lati,longi);
+            res.send(null);        
           }
           db.close();
         });
     });
-            if(bool==1)
-            {
-                newStation(lati,longi);
-                res.send(null);
-            } 
 		  // res.send(src);
-        
-      
 };
 var newStation = function(lati,longi){
     console.log(lati);
@@ -198,6 +192,7 @@ exports.tripRecord = (req, res) => {
         return null;
     }
     else{
+        console.log(currentWeather);
         weather=JSON.stringify(currentWeather.main);
         console.log("Wea:"+weather);
         let now = new Date();
@@ -239,3 +234,20 @@ exports.Transaction = (req,res) =>{
      });
 });  
 }
+exports.tripDuration = (req,res) =>{
+    console.log(req.body[1]);
+    MongoClient.connect(url, function(err, db) {
+    var dbo = db.db("ClientDB");
+    var myquery = { Name: req.body[1] };
+    dbo.collection("tripRecords").updateOne(myquery,{ "$set": {"Duration": req.body[0]}},function(err, res1) {
+    if (err) throw err;
+    if(res1)
+    {
+    console.log("1 document updated");
+    db.close();
+    return res.status(201).json({ msg: 'Payment SuccessFul!' });
+    }
+     });
+});  
+}
+
