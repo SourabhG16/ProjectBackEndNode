@@ -5,7 +5,7 @@ let date = require('date-and-time');
 var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://localhost:27017/";
 var OWM = require("openweathermap-node");
-
+var moment=require("moment");
 const helper = new OWM(
     {
         APPID: config.WeatherapiKey,
@@ -135,19 +135,13 @@ exports.findStation = (req, res) => {
 		  else          //write new station cord
 		  {
             console.log("not found.......!!!!!!!!!!!!!!!!!!!!!");
-            bool=1;        
+            newStation(lati,longi);
+            res.send(null);        
           }
           db.close();
         });
     });
-            if(bool==1)
-            {
-                newStation(lati,longi);
-                res.send(null);
-            } 
 		  // res.send(src);
-        
-      
 };
 var newStation = function(lati,longi){
     console.log(lati);
@@ -189,7 +183,6 @@ exports.tripRecord = (req, res) => {
 });
 
 };
-
  function insertRecord(type,data){
     var weather;
     helper.getCurrentWeatherByCityName("Pune", (err, currentWeather) => {
@@ -198,8 +191,9 @@ exports.tripRecord = (req, res) => {
         return null;
     }
     else{
+        //console.log(currentWeather);
         weather=JSON.stringify(currentWeather.main);
-        console.log("Wea:"+weather);
+       // console.log("Wea:"+weather);
         let now = new Date();
         var record={
             sourceStation:data[0].Name,
@@ -208,14 +202,16 @@ exports.tripRecord = (req, res) => {
             weatherData:weather,    
             tourDate:date.format(now,'MMM DD YYYY'),
             startTime:date.format(now,'HH:mm:ss'),
+            endTime:null,
             userName:data[2],
+            Duration:null,
             };
            // console.log("record: "+record); 
             MongoClient.connect(url, function(err, db) {
             var dbo = db.db("ClientDB");
             dbo.collection("tripRecords").insertOne(record,function(err, result) {
             if (err) throw err;    
-            console.log("inserted");
+            console.log("inserted trip Records");
             db.close();
         });
         });
@@ -224,7 +220,7 @@ exports.tripRecord = (req, res) => {
 }
 exports.Transaction = (req,res) =>{
 
-    console.log(req.body[2]);
+    //console.log(req.body[2]);
     MongoClient.connect(url, function(err, db) {
     var dbo = db.db("ClientDB");
     var myquery = { Name: req.body[2] };
@@ -238,4 +234,48 @@ exports.Transaction = (req,res) =>{
     }
      });
 });  
+}
+exports.tripDuration = (req,res) =>{
+    //var a=req.body[1];
+    user=null;
+    console.log(req.body[0]);
+    console.log(req.body[1]);
+    let now = new Date();
+   MongoClient.connect(url, function(err, db) {
+    var dbo = db.db("ClientDB");
+    var myquery = { userName: req.body[1],tourDate:date.format(now,'MMM DD YYYY') }
+    dbo.collection("tripRecords").findOneAndUpdate(myquery,{"$set": {"Duration": req.body[0]}},{sort: { startTime: -1 }},function(err, res1) {
+    if (err) throw err;
+    if(res1)
+    {
+    console.log("1 document updated and Duration Inserted");
+    db.close();
+    return res.status(201).json({ msg: 'Trip SuccessFul!' });
+    }
+     });
+     dbo.collection("tripRecords").find({ userName: req.body[1],tourDate:date.format(now,'MMM DD YYYY') },{sort:{startTime:-1}}, (err, user) => {
+         console.log("in finding"+user);
+        if (err) {
+            console.log("error finding");    
+        }
+        if (user) {
+            console.log("startishere"+user.startTime);
+            console.log("big"+moment(new Date(user.startTime),"HH:mm:ss"));
+            console.log("startTime"+moment(user.startTime,"HH:mm:ss").add(30, 'minutes').toDate());
+           user.endTime=moment(user.startTime,"HH:mm:ss").add(user.Duration, 'minutes').toDate();
+           this.user=user.endTime;  
+        }
+    })/*.sort({"StartTime": -1}).limit(1)*/;
+    
+    dbo.collection("tripRecords").findOneAndUpdate(myquery,{"$set": {"endTime" : moment(new Date("startTime")).add("Duration", 'm').format("HH:mm:ss")}},{sort: { startTime : -1 }},function(err, res1) {
+        if (err) throw err;
+        if(res1)
+        {
+            console.log("1 document updated and EndTime Inserted");
+            db.close();
+            //return res.status(201).json({ msg: 'Trip SuccessFul!' });
+        }
+    });
+    //var newDateObj = moment(oldDateObj).add(30, 'm').toDate();  
+})
 }
