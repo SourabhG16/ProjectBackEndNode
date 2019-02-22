@@ -23,6 +23,7 @@
     "mongoose": "^5.4.5",
     "morgan": "^1.9.1",
     "node": "^11.9.0",
+    "node-kmeans": "^1.1.8",
     "node-suggestive-search": "^1.9.2",
     "npm": "^6.7.0",
     "openweathermap": "^1.0.0",
