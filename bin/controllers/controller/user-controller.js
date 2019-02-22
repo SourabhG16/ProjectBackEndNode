@@ -6,6 +6,13 @@ var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://localhost:27017/";
 var OWM = require("openweathermap-node");
 var moment=require("moment");
+var globalRes;
+var globalFlag;
+var globalK;
+var globalClust;
+var logK;
+var data=[];
+var dataLength;
 const helper = new OWM(
     {
         APPID: config.WeatherapiKey,
@@ -278,4 +285,137 @@ exports.tripDuration = (req,res) =>{
     });
     //var newDateObj = moment(oldDateObj).add(30, 'm').toDate();  
 })
+}
+exports.clustering = (req, res) => {
+        globalRes=res;
+        logK=0;
+        globalFlag=false;
+        globalK=1;
+        console.log("dataLength"+dataLength);
+         for(let m=1 ; m < dataLength/2; m++)
+         {
+                globalK=m;
+                Clust(function(){
+                    findDist(function(){  
+                    });
+                
+                });
+               
+                console.log("while: "+globalK);    
+        
+         }
+  }
+  
+function findDist(callback)
+{
+    
+    if(globalFlag === false)
+    {
+        console.log("K value: "+globalK);
+         var GeoPoint = require('geopoint');
+         console.log("in dist");
+         var resultCheckM=0;
+         // console.log("centroid:"+globalClust[0]["centroid"]);
+          for(let i=0;i<globalClust.length;i++)
+          {
+            var resultCheckS=0;
+            console.log("Cluster no: "+i);
+            var cent = globalClust[i]["centroid"].toString().split(",").map(function (val) { return +val ; }); //get lat and long from centroid
+            var clust_length=globalClust[i]["cluster"].length;
+            for(let j=0;j < clust_length ; j++)
+            {
+                    var arr = globalClust[i]["cluster"][j].toString().split(",").map(function (val) { return +val ; }); //get lat and long from cluster
+                    point1 = new GeoPoint(parseFloat(arr[0]), parseFloat(arr[1]));
+                    point2 = new GeoPoint(parseFloat(cent[0]), parseFloat(cent[1]));
+                    var distance = point1.distanceTo(point2, true);
+                    console.log("dist: "+distance);
+                    if(distance > 2 )
+                        globalFlag = false;
+                    else
+                        resultCheckS++;
+            }
+            if(resultCheckS === clust_length)
+                resultCheckM++;
+          }
+          if(resultCheckM === globalClust.length)
+          // if(resultCheckM > 1)
+          {
+                globalFlag=true;
+                // globalRes.send(globalClust);
+                findOptimal(resultCheckM);
+          }
+          else if(logK === dataLength-1)
+          {
+                globalFlag=true;
+                globalRes.send("sorryy"); 
+          }
+    }
+      
+     callback();
+
+}  
+
+function Clust(callback)
+{
+    if(globalFlag === false)
+    {
+        console.log("inin function");
+        
+            let vectors = new Array();
+            for (let i = 0 ; i < data.length ; i++) {
+                vectors[i] = [ data[i]['Latitude'] , data[i]['Longitude']];
+            }
+            k_no=globalK;
+            const kmeans = require('node-kmeans');
+                console.log("IN func");
+                kmeans.clusterize(vectors, {k: k_no}, (err,res) => {
+                if (err)
+                {
+                  func_flag=1;
+                  console.error(err);  
+                } 
+                else
+                {
+                  globalClust=res;
+                  logK++;
+                  callback();
+                }
+                    
+                });    
+    }
+}
+function findOptimal()
+{
+    console.log("in findOptimal: "+globalClust.length);
+    var max=0;
+     var result;
+     for(let i=0 ; i < globalClust.length ; i++)
+     {
+             if(globalClust[i]["cluster"].length > max)
+             {
+                 max=globalClust[i]["cluster"].length;
+                 result=globalClust[i];
+                  console.log("resultin: "+result);
+             }
+                    console.log("clll: "+globalClust[i]["cluster"].length);
+     }
+    console.log("result: "+result);
+    globalRes.send(result);
+}
+exports.loadCords = (req, res) => {
+    MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        var dbo = db.db("ClientDB");
+        dbo.collection("newStations").find().toArray(function(err, result) {
+          if (err) throw err;    
+          else
+          {
+            data=result;
+            dataLength=data.length;
+            console.log("data: "+JSON.stringify(data,null,4));
+            console.log("dataLenght: "+data.length);
+            res.send("result:  "+JSON.stringify(data,null,4));
+          }
+      });
+    });
 }

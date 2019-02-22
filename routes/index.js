@@ -65,6 +65,8 @@ router.post('/login/triprecord', userController.tripRecord);
 router.post('/login/findstation', userController.findStation);
 router.post('/login/transaction', userController.Transaction);
 router.post('/login/tripduration', userController.tripDuration);
+router.post('/clustering', userController.clustering);
+router.post('/loadcords', userController.loadCords);
 router.get('/special', passport.authenticate('jwt', { session: false }), (req, res) => {
     return res.json({ msg: `Hey ${req.user.email}! I open at the close.` });
 });
