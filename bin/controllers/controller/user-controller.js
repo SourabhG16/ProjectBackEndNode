@@ -273,16 +273,22 @@ exports.tripDuration = (req,res) =>{
            this.user=user.endTime;  
         }
     })/*.sort({"StartTime": -1}).limit(1)*/;
-    
-    dbo.collection("tripRecords").findOneAndUpdate(myquery,{"$set": {"endTime" : moment(new Date("startTime")).add("Duration", 'm').format("HH:mm:ss")}},{sort: { startTime : -1 }},function(err, res1) {
+    // changed from here
+    let endDate = new Date();
+    console.log("start: "+endDate);
+    endDate.setMinutes(parseInt(req.body[0])+endDate.getMinutes());
+    console.log("end: "+endDate);
+    //dbo.collection("tripRecords").findOneAndUpdate(myquery,{"$set": {"endTime" : moment(new Date("startTime")).add("Duration", 'm').format("HH:mm:ss")}},{sort: { startTime : -1 }},function(err, res1) {
+    dbo.collection("tripRecords").findOneAndUpdate(myquery,{"$set": {"endTime" :date.format(endDate,'HH:mm:ss')}},{sort: { startTime : -1 }},function(err, res1) {
+    //till here
         if (err) throw err;
-        if(res1)
-        {
-            console.log("1 document updated and EndTime Inserted");
-            db.close();
-            //return res.status(201).json({ msg: 'Trip SuccessFul!' });
-        }
-    });
+            if(res1)
+            {
+                console.log("1 document updated and EndTime Inserted");
+                db.close();
+                //return res.status(201).json({ msg: 'Trip SuccessFul!' });
+            }
+        });
     //var newDateObj = moment(oldDateObj).add(30, 'm').toDate();  
 })
 }
